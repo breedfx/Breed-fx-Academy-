@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up - Breed Fx Academy</title>
+  <link rel="stylesheet" href="signup.css" />
+</head>
+<body>
+  <header>
+    <h1>Sign Up to Breed Fx Academy</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="login.html">Login</a>
+      <a href="courses.html">Courses</a>
+    </nav>
+  </header>
+
+  <section class="signup-section">
+    <form class="signup-form">
+      <h2>Create Account</h2>
+      <input type="text" placeholder="Email" id="email" required />
+      <input type="password" placeholder="Password" id="password" required />
+      <button type="submit">Sign Up</button>
+      <p class="note">Already have an account? <a href="login.html">Login</a></p>
+    </form>
+  </section>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
+  <script>
+    // Corrected Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBzPF8JCxFKitGcW5Y9wTcSkc4QaKS7q0s",
+      authDomain: "breedfx-academy.firebaseapp.com",
+      projectId: "breedfx-academy",
+      storageBucket: "breedfx-academy.appspot.com",
+      messagingSenderId: "242328320104",
+      appId: "1:242328320104:web:a4b10a03d2822130eea3dd",
+      measurementId: "G-YVJRNPN6H3"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Handle signup
+    document.querySelector(".signup-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      firebase.auth().createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          alert("Signup successful!");
+          window.location.href = "dashboard.html"; // or dashboard.html if you want
+        })
+        .catch((error) => {
+          alert("Error: " + error.message);
+        });
+    });
+  </script>
+</body>
+</html>
