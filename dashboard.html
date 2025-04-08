@@ -3,141 +3,144 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Breed Fx Dashboard</title>
+  <title>Dashboard - Breed Fx Academy</title>
   <link rel="stylesheet" href="dashboard.css" />
 </head>
 <body>
   <header>
-    <h1>Breed Fx Academy</h1>
-    <button onclick="logout()">Logout</button>
+    <h1>Welcome to Your Dashboard</h1>
+    <button id="logout">Logout</button>
   </header>
 
-  <section class="dashboard-content">
-    <h2>Welcome, <span id="userEmail">Trader</span>!</h2>
+  <main>
+    <section class="stats">
+      <div><h3>Balance</h3><p id="balance">$0</p></div>
+      <div><h3>Open Trades</h3><p id="openTrades">0</p></div>
+      <div><h3>Win Rate</h3><p id="winRate">0%</p></div>
+      <div><h3>ROI</h3><p id="roi">0%</p></div>
+    </section>
 
-    <!-- COURSE PROGRESS -->
-    <h3>Course Progress</h3>
-    <div class="course-progress">
-      <p>Beginner Forex: <span id="course1Progress">0</span>%</p>
-      <div class="progress-bar-container">
-        <div class="progress-bar" id="progressCourse1"></div>
-      </div>
+    <section>
+      <h3>Add New Trade</h3>
+      <form id="addTradeForm">
+        <input type="text" id="pair" placeholder="Currency Pair (e.g., GBP/USD)" required />
+        <select id="type">
+          <option value="Buy">Buy</option>
+          <option value="Sell">Sell</option>
+        </select>
+        <input type="number" id="entry" step="0.0001" placeholder="Entry Price" required />
+        <input type="number" id="exit" step="0.0001" placeholder="Exit Price" required />
+        <input type="text" id="result" placeholder="Result (e.g., +50 pips or 5%)" required />
+        <input type="number" id="lotSize" step="0.01" placeholder="Lot Size" />
+        <input type="number" id="risk" step="0.1" placeholder="Risk % (e.g., 1.5)" />
+        <input type="number" id="pl" step="0.01" placeholder="Profit/Loss $" />
+        <input type="date" id="date" />
+        <textarea id="notes" placeholder="Notes or Observations"></textarea>
+        <button type="submit">Save Trade</button>
+      </form>
+    </section>
 
-      <p>Advanced Forex: <span id="course2Progress">0</span>%</p>
-      <div class="progress-bar-container">
-        <div class="progress-bar" id="progressCourse2"></div>
-      </div>
-    </div>
+    <section>
+      <h3>Recent Trades</h3>
+      <table id="tradesTable">
+        <thead>
+          <tr>
+            <th>Pair</th><th>Type</th><th>Entry</th><th>Exit</th><th>Result</th><th>Date</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
 
-    <!-- TRADER'S PORTFOLIO -->
-    <h3>Trader's Portfolio</h3>
-    <div id="portfolio">
-      <p>Account Balance: <span id="balance">$0.00</span></p>
-      <p>Open Trades: <span id="openTrades">0</span></p>
-      <textarea id="tradeNotes" placeholder="Your trade notes..."></textarea><br />
-      <button onclick="savePortfolio()">Save Portfolio</button>
-    </div>
-
-    <!-- PERFORMANCE OVERVIEW -->
-    <h3>Performance Overview</h3>
-    <div id="performance">
-      <p>Win Rate: <span id="winRate">--</span></p>
-      <p>Avg ROI: <span id="roi">--</span></p>
-    </div>
-
-    <!-- RECENT TRADES -->
-    <h3>Recent Trades</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Pair</th>
-          <th>Entry</th>
-          <th>Exit</th>
-          <th>Result</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody id="tradesTable"></tbody>
-    </table>
-  </section>
-
-  <!-- FIREBASE SDKs -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
+  <!-- Your Firebase config -->
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyBzPF8JCxFKitGcW5Y9wTcSkc4QaKS7q0s",
-      authDomain: "breedfx-academy.firebaseapp.com",
-      projectId: "breedfx-academy",
-      storageBucket: "breedfx-academy.appspot.com",
-      messagingSenderId: "242328320104",
-      appId: "1:242328320104:web:a4b10a03d2822130eea3dd",
-      measurementId: "G-YVJRNPN6H3"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
+  </script>
 
+  <!-- Dashboard Logic -->
+  <script>
     auth.onAuthStateChanged(async (user) => {
-      if (!user) return (window.location.href = "login.html");
-      document.getElementById("userEmail").innerText = user.email;
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
 
-      const docRef = db.collection("users").doc(user.uid);
-      const docSnap = await docRef.get();
-      if (docSnap.exists) {
-        const data = docSnap.data();
+      const userRef = db.collection("users").doc(user.uid);
+      const doc = await userRef.get();
 
-        // Course progress
-        const cp1 = data.course1Progress || 0;
-        const cp2 = data.course2Progress || 0;
-        document.getElementById("course1Progress").innerText = cp1;
-        document.getElementById("progressCourse1").style.width = cp1 + "%";
-        document.getElementById("course2Progress").innerText = cp2;
-        document.getElementById("progressCourse2").style.width = cp2 + "%";
+      if (doc.exists) {
+        const data = doc.data();
+        document.getElementById("balance").innerText = data.balance || "$0";
+        document.getElementById("openTrades").innerText = data.openTrades || "0";
+        document.getElementById("winRate").innerText = data.winRate || "0%";
+        document.getElementById("roi").innerText = data.roi || "0%";
 
-        // Portfolio
-        document.getElementById("balance").innerText = data.balance || "$0.00";
-        document.getElementById("openTrades").innerText = data.openTrades || 0;
-        document.getElementById("tradeNotes").value = data.tradeNotes || "";
-
-        // Performance
-        document.getElementById("winRate").innerText = data.winRate || "--";
-        document.getElementById("roi").innerText = data.roi || "--";
-
-        // Recent Trades Table
-        const trades = data.trades || [];
-        const tableBody = document.getElementById("tradesTable");
-        trades.slice(-5).reverse().forEach((trade) => {
-          const row = `<tr>
-            <td>${trade.pair}</td>
-            <td>${trade.entry}</td>
-            <td>${trade.exit}</td>
-            <td>${trade.result}</td>
-            <td>${trade.date}</td>
-          </tr>`;
-          tableBody.innerHTML += row;
-        });
+        if (data.trades) {
+          const table = document.querySelector("#tradesTable tbody");
+          data.trades.forEach(trade => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${trade.pair}</td>
+              <td>${trade.type}</td>
+              <td>${trade.entry}</td>
+              <td>${trade.exit}</td>
+              <td>${trade.result}</td>
+              <td>${trade.date}</td>
+            `;
+            table.appendChild(row);
+          });
+        }
       }
     });
 
-    function savePortfolio() {
+    document.getElementById("addTradeForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
       const user = auth.currentUser;
       if (!user) return;
 
-      const notes = document.getElementById("tradeNotes").value;
-      db.collection("users").doc(user.uid).update({
-        tradeNotes: notes
-      }).then(() => {
-        alert("Portfolio saved!");
-      });
-    }
+      const trade = {
+        pair: document.getElementById("pair").value,
+        type: document.getElementById("type").value,
+        entry: parseFloat(document.getElementById("entry").value),
+        exit: parseFloat(document.getElementById("exit").value),
+        result: document.getElementById("result").value,
+        lotSize: parseFloat(document.getElementById("lotSize").value) || null,
+        risk: parseFloat(document.getElementById("risk").value) || null,
+        profitLoss: parseFloat(document.getElementById("pl").value) || null,
+        date: document.getElementById("date").value || new Date().toISOString().split("T")[0],
+        notes: document.getElementById("notes").value
+      };
 
-    function logout() {
-      auth.signOut().then(() => (window.location.href = "login.html"));
-    }
+      const userRef = db.collection("users").doc(user.uid);
+      const doc = await userRef.get();
+      const existingTrades = doc.exists && doc.data().trades ? doc.data().trades : [];
+
+      existingTrades.push(trade);
+      await userRef.update({ trades: existingTrades });
+
+      alert("Trade saved!");
+      location.reload();
+    });
+
+    document.getElementById("logout").addEventListener("click", () => {
+      auth.signOut().then(() => window.location.href = "login.html");
+    });
   </script>
 </body>
 </html>
