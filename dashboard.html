@@ -3,105 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard - Breed Fx Academy</title>
+  <title>Breed Fx Dashboard</title>
   <link rel="stylesheet" href="dashboard.css" />
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(120deg, #0f2027, #203a43, #2c5364);
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
-      min-height: 100vh;
-    }
-
-    header {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: rgba(255, 255, 255, 0.05);
-      padding: 1rem 2rem;
-      border-radius: 8px;
-    }
-
-    h1 {
-      margin: 0;
-    }
-
-    #logoutBtn {
-      background: #ff4b2b;
-      border: none;
-      color: #fff;
-      padding: 10px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .card {
-      margin-top: 2rem;
-      background-color: rgba(255, 255, 255, 0.1);
-      padding: 2rem;
-      border-radius: 12px;
-      text-align: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      width: 90%;
-      max-width: 400px;
-    }
-
-    .card h2 {
-      margin-bottom: 0.5rem;
-    }
-
-    .progress {
-      margin-top: 1.5rem;
-      text-align: left;
-    }
-
-    .progress-bar {
-      background-color: #444;
-      border-radius: 4px;
-      overflow: hidden;
-      height: 20px;
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      width: 40%;
-      background-color: #00c9a7;
-      transition: width 0.5s ease;
-    }
-  </style>
 </head>
 <body>
   <header>
     <h1>Breed Fx Dashboard</h1>
-    <button id="logoutBtn">Logout</button>
+    <button onclick="logout()">Logout</button>
   </header>
 
-  <div class="card">
+  <section class="dashboard-content">
     <h2>Welcome, Trader!</h2>
-    <p id="userEmail">Loading your email...</p>
+    <p>Logged in as: <span id="userEmail">Loading...</span></p>
 
-    <div class="progress">
-      <h3>Course Progress</h3>
-      <div class="progress-bar">
-        <div class="progress-bar-fill"></div>
-      </div>
-      <p>Beginner Forex: 40% complete</p>
+    <h3>Course Progress</h3>
+
+    <!-- Beginner Forex -->
+    <p>Beginner Forex: <span id="course1Progress">0</span>% complete</p>
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progressCourse1" style="width: 0%"></div>
     </div>
-  </div>
+
+    <!-- Advanced Forex -->
+    <p>Advanced Forex: <span id="course2Progress">0</span>% complete</p>
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progressCourse2" style="width: 0%"></div>
+    </div>
+  </section>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
   <script>
-    // Firebase config
+    // Firebase config (replace with your own)
     const firebaseConfig = {
       apiKey: "AIzaSyBzPF8JCxFKitGcW5Y9wTcSkc4QaKS7q0s",
       authDomain: "breedfx-academy.firebaseapp.com",
@@ -112,27 +48,42 @@
       measurementId: "G-YVJRNPN6H3"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    // Check user login
-    firebase.auth().onAuthStateChanged((user) => {
+    // Load User & Progress
+    auth.onAuthStateChanged(async (user) => {
       if (user) {
-        document.getElementById("userEmail").innerText = "Logged in as: " + user.email;
+        document.getElementById("userEmail").innerText = user.email;
+
+        const userDocRef = db.collection("users").doc(user.uid);
+        const userDoc = await userDocRef.get();
+
+        if (userDoc.exists) {
+          const data = userDoc.data();
+
+          // Beginner
+          const beginnerProgress = data.course1Progress || 0;
+          document.getElementById("course1Progress").innerText = beginnerProgress;
+          document.getElementById("progressCourse1").style.width = beginnerProgress + "%";
+
+          // Advanced
+          const advancedProgress = data.course2Progress || 0;
+          document.getElementById("course2Progress").innerText = advancedProgress;
+          document.getElementById("progressCourse2").style.width = advancedProgress + "%";
+        }
       } else {
         window.location.href = "login.html";
       }
     });
 
     // Logout
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-      firebase.auth().signOut().then(() => {
-        alert("Logged out successfully.");
+    function logout() {
+      auth.signOut().then(() => {
         window.location.href = "login.html";
-      }).catch((error) => {
-        alert("Logout error: " + error.message);
       });
-    });
+    }
   </script>
 </body>
 </html>
