@@ -8,36 +8,65 @@
 </head>
 <body>
   <header>
-    <h1>Breed Fx Dashboard</h1>
+    <h1>Breed Fx Academy</h1>
     <button onclick="logout()">Logout</button>
   </header>
 
   <section class="dashboard-content">
-    <h2>Welcome, Trader!</h2>
-    <p>Logged in as: <span id="userEmail">Loading...</span></p>
+    <h2>Welcome, <span id="userEmail">Trader</span>!</h2>
 
+    <!-- COURSE PROGRESS -->
     <h3>Course Progress</h3>
+    <div class="course-progress">
+      <p>Beginner Forex: <span id="course1Progress">0</span>%</p>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressCourse1"></div>
+      </div>
 
-    <!-- Beginner Forex -->
-    <p>Beginner Forex: <span id="course1Progress">0</span>% complete</p>
-    <div class="progress-bar-container">
-      <div class="progress-bar" id="progressCourse1" style="width: 0%"></div>
+      <p>Advanced Forex: <span id="course2Progress">0</span>%</p>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressCourse2"></div>
+      </div>
     </div>
 
-    <!-- Advanced Forex -->
-    <p>Advanced Forex: <span id="course2Progress">0</span>% complete</p>
-    <div class="progress-bar-container">
-      <div class="progress-bar" id="progressCourse2" style="width: 0%"></div>
+    <!-- TRADER'S PORTFOLIO -->
+    <h3>Trader's Portfolio</h3>
+    <div id="portfolio">
+      <p>Account Balance: <span id="balance">$0.00</span></p>
+      <p>Open Trades: <span id="openTrades">0</span></p>
+      <textarea id="tradeNotes" placeholder="Your trade notes..."></textarea><br />
+      <button onclick="savePortfolio()">Save Portfolio</button>
     </div>
+
+    <!-- PERFORMANCE OVERVIEW -->
+    <h3>Performance Overview</h3>
+    <div id="performance">
+      <p>Win Rate: <span id="winRate">--</span></p>
+      <p>Avg ROI: <span id="roi">--</span></p>
+    </div>
+
+    <!-- RECENT TRADES -->
+    <h3>Recent Trades</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Pair</th>
+          <th>Entry</th>
+          <th>Exit</th>
+          <th>Result</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="tradesTable"></tbody>
+    </table>
   </section>
 
-  <!-- Firebase SDKs -->
+  <!-- FIREBASE SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
   <script>
-    // Firebase config (replace with your own)
     const firebaseConfig = {
       apiKey: "AIzaSyBzPF8JCxFKitGcW5Y9wTcSkc4QaKS7q0s",
       authDomain: "breedfx-academy.firebaseapp.com",
@@ -52,37 +81,62 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // Load User & Progress
     auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        document.getElementById("userEmail").innerText = user.email;
+      if (!user) return (window.location.href = "login.html");
+      document.getElementById("userEmail").innerText = user.email;
 
-        const userDocRef = db.collection("users").doc(user.uid);
-        const userDoc = await userDocRef.get();
+      const docRef = db.collection("users").doc(user.uid);
+      const docSnap = await docRef.get();
+      if (docSnap.exists) {
+        const data = docSnap.data();
 
-        if (userDoc.exists) {
-          const data = userDoc.data();
+        // Course progress
+        const cp1 = data.course1Progress || 0;
+        const cp2 = data.course2Progress || 0;
+        document.getElementById("course1Progress").innerText = cp1;
+        document.getElementById("progressCourse1").style.width = cp1 + "%";
+        document.getElementById("course2Progress").innerText = cp2;
+        document.getElementById("progressCourse2").style.width = cp2 + "%";
 
-          // Beginner
-          const beginnerProgress = data.course1Progress || 0;
-          document.getElementById("course1Progress").innerText = beginnerProgress;
-          document.getElementById("progressCourse1").style.width = beginnerProgress + "%";
+        // Portfolio
+        document.getElementById("balance").innerText = data.balance || "$0.00";
+        document.getElementById("openTrades").innerText = data.openTrades || 0;
+        document.getElementById("tradeNotes").value = data.tradeNotes || "";
 
-          // Advanced
-          const advancedProgress = data.course2Progress || 0;
-          document.getElementById("course2Progress").innerText = advancedProgress;
-          document.getElementById("progressCourse2").style.width = advancedProgress + "%";
-        }
-      } else {
-        window.location.href = "login.html";
+        // Performance
+        document.getElementById("winRate").innerText = data.winRate || "--";
+        document.getElementById("roi").innerText = data.roi || "--";
+
+        // Recent Trades Table
+        const trades = data.trades || [];
+        const tableBody = document.getElementById("tradesTable");
+        trades.slice(-5).reverse().forEach((trade) => {
+          const row = `<tr>
+            <td>${trade.pair}</td>
+            <td>${trade.entry}</td>
+            <td>${trade.exit}</td>
+            <td>${trade.result}</td>
+            <td>${trade.date}</td>
+          </tr>`;
+          tableBody.innerHTML += row;
+        });
       }
     });
 
-    // Logout
-    function logout() {
-      auth.signOut().then(() => {
-        window.location.href = "login.html";
+    function savePortfolio() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const notes = document.getElementById("tradeNotes").value;
+      db.collection("users").doc(user.uid).update({
+        tradeNotes: notes
+      }).then(() => {
+        alert("Portfolio saved!");
       });
+    }
+
+    function logout() {
+      auth.signOut().then(() => (window.location.href = "login.html"));
     }
   </script>
 </body>
